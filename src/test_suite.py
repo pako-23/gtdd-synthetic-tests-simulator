@@ -1,7 +1,7 @@
 
 from abc import ABC, abstractmethod
 
-class TestOracle(ABC):
+class TestSuite(ABC):
 
     n: int
 
@@ -13,7 +13,7 @@ class TestOracle(ABC):
         pass
 
 
-class ListTestOracle(TestOracle):
+class ListTestSuite(TestSuite):
 
     def generate_tests(self) -> list[int]:
         return list(range(self.n))

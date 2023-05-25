@@ -1,9 +1,9 @@
 
 from abc import ABC, abstractmethod
 from graph import Graph
-from test_driver import TestDriver
+from test_suite_oracle import TestSuiteOracle
 
-def ex_linear(tests: list[int], test_driver: TestDriver) -> Graph:
+def ex_linear(tests: list[int], test_driver: TestSuiteOracle) -> Graph:
     g = Graph(tests)
 
     for i in range(len(tests)):
@@ -17,4 +17,3 @@ def ex_linear(tests: list[int], test_driver: TestDriver) -> Graph:
             results = test_driver.run_tests(schedule)
 
     return g
-

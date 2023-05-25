@@ -20,9 +20,6 @@ class Graph:
         assert v in self.graph
         self.graph[u].add(v)
 
-    def in_degree(self, u) -> int:
-        return sum([1 for edges in self.graph.values() if u in edges])
-
     def get_dependencies(self, u: int) -> list[int]:
         dep = set()
 
@@ -48,6 +45,10 @@ class Graph:
                     if u in deps and u in min_edges:
                         min_edges.remove(u)
             self.graph[node] = min_edges
+
+    @property
+    def nodes(self):
+        return self.graph.keys()
 
     def __len__(self) -> int:
         return len(self.graph)
@@ -79,21 +80,27 @@ class GraphGenerator(ABC):
 
 
 class ErdosRenyiGenerator(GraphGenerator):
-    p: float = 0.5
+    _p: float
+
+    def __init__(self, nodes: int) -> None:
+        super().__init__(nodes)
+        self._p = 1/nodes
 
     def generate_edges(self) -> None:
         for i in range(len(self.G)):
             for j in range(i+1, len(self.G)):
-                if random.uniform(0, 1) < self.p:
+                if random.uniform(0, 1) < self._p:
                     self.G.add_edge(j, i)
 
 class BarabasiAlbertGenerator(GraphGenerator):
 
     def generate_edges(self) -> None:
-        assert len(self.G) >= 2
-        self.G.add_edge(2, 1)
-        for v in range(3, len(self.G)):
-            s = sum([self.G.in_degree(j) for j in range(v)])
-            for i in range(v):
-                if random.uniform(0, 1) < self.G.in_degree(i)/s:
-                    self.G.add_edge(v, i)
+        pass
+        # assert len(self.G) >= 2
+        # self.G.add_edge(1, 0)
+        # degrees = {0: 1}
+        # for v in range(2, len(self.G)):
+        #     for i in range(v):
+        #         s = sum([self.G.in_degree(j) for j in range(i)])
+        #         if random.uniform(0, 1) < self.G.in_degree(i)/s:
+        #             self.G.add_edge(v, i)

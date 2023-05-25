@@ -2,14 +2,14 @@
 from abc import ABC, abstractmethod
 import graph
 
-class TestDriver:
+class TestSuiteOracle:
 
     @abstractmethod
     def run_tests(self, tests: list[int]) -> list[bool]:
         pass
 
 
-class DirectDependenciesTestDriver(TestDriver):
+class DirectDependenciesOracle(TestSuiteOracle):
 
     graph_generator: graph.GraphGenerator
 
