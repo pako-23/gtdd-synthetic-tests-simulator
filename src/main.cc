@@ -20,17 +20,24 @@ int main(int argc, const char *argv[])
     };
 
     ArgParser args{argv[0], "Program to run tests on synthetic graphs"};
-    args.add_parameter(new Parameter{"help", "Show the help page", "h"});
     args.add_parameter(new ValuedParameter<uint32_t>("tests", "The number of tests", n, "t", true));
-    args.add_parameter(new ValuedParameter<std::string>("algorithm", "The algorithm to run", algorithm, "a", true));
+    args.add_parameter(new ValuedParameter<std::string>("algorithm",
+        (
+            "The algorithm to run. The possible values are: " +
+            join(", ", "pradet", "ex-linear", "big-table")
+        ).c_str(), algorithm, "a", true));
     args.add_parameter(new ValuedParameter<std::string>("graph-generator",
-                                                        "The approach used to generate the graph of dependencies",
-                                                        oracle_params.generator_type,
-                                                        "g",
-                                                        true));
-    args.add_parameter(new ValuedParameter<double>("probability", "Erdos-Renyi probability", oracle_params.probability, "p", false));
-    args.add_parameter(new ValuedParameter<uint32_t>("min-out", "Min out degree", oracle_params.min_out, nullptr, false));
-    args.add_parameter(new ValuedParameter<uint32_t>("max-out", "Max out degree", oracle_params.max_out, nullptr, false));
+        (
+            "The approach used to generate the graph of dependencies. "
+            "The possible values are: " +
+            join(", ", "erdos-renyi", "barabasi-albert", "out-degree")
+        ).c_str(), oracle_params.generator_type, "g", true));
+    args.add_parameter(new ValuedParameter<double>("probability",
+        "Erdos-Renyi probability", oracle_params.probability, "p", false));
+    args.add_parameter(new ValuedParameter<uint32_t>("min-out",
+        "Min out degree", oracle_params.min_out, nullptr, false));
+    args.add_parameter(new ValuedParameter<uint32_t>("max-out",
+        "Max out degree", oracle_params.max_out, nullptr, false));
     args.parse(argc, argv);
 
     std::string gen = oracle_params.generator_type;

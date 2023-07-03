@@ -17,7 +17,9 @@ Parameter::Parameter(const char *long_name,
 ArgParser::ArgParser(const std::string& program_name, const std::string& description)
     : prog_name{program_name},
       desc{description}
-{ }
+{
+    add_parameter(new Parameter{"help", "Show the help page", "h"});
+}
 
 ArgParser::~ArgParser()
 {
@@ -39,13 +41,21 @@ void ArgParser::print_help(std::ostream& os)
 
     os << std::endl << std::endl
        << "DESCRIPTION" << std::endl
-       << "      The program has the following options:" << std::endl;
+       << "      The program has the following options:"
+       << std::endl << std::endl;
+    size_t max_len = 0;
+    for (const auto& param : parameters)
+        max_len = std::max(max_len, param.second->long_name.length());
+
+
     for (const auto& param : parameters) {
         if (param.second->short_name.empty()) os << "    ";
         else os << "  -" << param.second->short_name;
 
-        os << "  [--" << param.second->long_name << "]    "
-           << param.second->description;
+        os << "  [--" << param.second->long_name << "]";
+        size_t tabbing = (max_len - param.second->long_name.length()) + 4;
+        for (size_t i = 0; i < tabbing; ++i) os << ' ';
+        os << param.second->description;
         if (param.second->required) os << " (Required)";
         os << std::endl;
     }
@@ -72,6 +82,11 @@ void ArgParser::parse(int argc, const char *argv[])
         for (; *begin == '-'; ++begin);
         for (; *(begin + size) && *(begin + size) != '='; ++size);
         std::string option{begin, size};
+
+        if (option == "help" || option == "h") {
+            print_help(std::cout);
+            exit(EXIT_SUCCESS);
+        }
 
         auto long_name = short_names.find(option);
         auto param{parameters.find(long_name == short_names.end() ? option : long_name->second)};
