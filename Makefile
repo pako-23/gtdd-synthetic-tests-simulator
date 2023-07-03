@@ -47,57 +47,66 @@ make-experiment = for j in $$(seq 1 $(MAX_RUNS)); do \
 	done
 
 .PHONY: experiments
-experiments: erdos-renyi-pradet \
-	erdos-renyi-ex-linear \
+experiments: big-table \
+	pradet \
+	ex-linear
+
+
+# big-table experiments
+.PHONY: big-table
+big-table: barabasi-albert-big-table \
 	erdos-renyi-big-table \
-	barabasi-albert-pradet \
-	barabasi-albert-ex-linear \
-	barabasi-albert-big-table \
-	out-degree-pradet \
-	out-degree-ex-linear \
 	out-degree-big-table
-
-
-# Erods-Renyi experiments
-.PHONY: erdos-renyi-pradet
-erdos-renyi-pradet: all
-	$(call make-experiment,erdos-renyi,pradet)
-
-.PHONY: erdos-renyi-ex-linear
-erdos-renyi-ex-linear: all
-	$(call make-experiment,erdos-renyi,ex-linear)
-
-.PHONY: erdos-renyi-big-table
-erdos-renyi-big-table: all
-	$(call make-experiment,erdos-renyi,big-table)
-
-
-# Barabasi-Albert experiments
-.PHONY: barabasi-albert-pradet
-barabasi-albert-pradet: all
-	$(call make-experiment,barabasi-albert,pradet)
-
-.PHONY: barabasi-albert-ex-linear
-barabasi-albert-ex-linear: all
-	$(call make-experiment,barabasi-albert,ex-linear)
 
 .PHONY: barabasi-albert-big-table
 barabasi-albert-big-table: all
 	$(call make-experiment,barabasi-albert,big-table)
 
+.PHONY: erdos-renyi-big-table
+erdos-renyi-big-table: all
+	$(call make-experiment,erdos-renyi,big-table)
 
-# Out-degree experiments
-.PHONY: out-degree-pradet
-out-degree-pradet: all
-	$(call make-experiment,out-degree,pradet)
+.PHONY: out-degree-big-table
+out-degree-big-table: all
+	$(call make-experiment,out-degree,big-table)
+
+
+# ex-linear experiments
+.PHONY: ex-linear
+ex-linear: barabasi-albert-ex-linear \
+	erdos-renyi-ex-linear \
+	out-degree-ex-linear
+
+.PHONY: barabasi-albert-ex-linear
+barabasi-albert-ex-linear: all
+	$(call make-experiment,barabasi-albert,ex-linear)
+
+.PHONY: erdos-renyi-ex-linear
+erdos-renyi-ex-linear: all
+	$(call make-experiment,erdos-renyi,ex-linear)
 
 .PHONY: out-degree-ex-linear
 out-degree-ex-linear: all
 	$(call make-experiment,out-degree,ex-linear)
 
-.PHONY: out-degree-big-table
-out-degree-big-table: all
-	$(call make-experiment,out-degree,big-table)
+
+# pradet experiments
+.PHONY: pradet
+pradet: barabasi-albert-pradet \
+	erdos-renyi-pradet \
+	out-degree-pradet
+
+.PHONY: barabasi-albert-pradet
+barabasi-albert-pradet: all
+	$(call make-experiment,barabasi-albert,pradet)
+
+.PHONY: erdos-renyi-pradet
+erdos-renyi-pradet: all
+	$(call make-experiment,erdos-renyi,pradet)
+
+.PHONY: out-degree-pradet
+out-degree-pradet: all
+	$(call make-experiment,out-degree,pradet)
 
 
 .PHONY: clean
