@@ -17,8 +17,6 @@ ifneq ($(shell which podman 2>/dev/null),)
 else ifneq ($(shell which docker 2>/dev/null),)
 	CONTAINER_CLI := $(shell which docker)
 	MOUNT_OPTIONS :=
-else
-	$(error "No container cli installed found")
 endif
 
 .PHONY: all
@@ -40,6 +38,7 @@ $(BUILD_DIR):
 
 -include $(DEPENDS)
 
+ifdef CONTAINER_CLI
 .PHONY: lint
 lint:
 	@$(CONTAINER_CLI) run -t --rm -v $(PWD):/workdir$(MOUNT_OPTIONS) \
@@ -53,6 +52,7 @@ format:
 		-w /workdir \
 		unibeautify/clang-format \
 		-i -style=$(CODE_STYLE) $(SRCS) $(H_FILES)
+endif
 
 MAX_RUNS ?= 50
 MIN_TESTS ?= 2
