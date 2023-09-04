@@ -1,12 +1,25 @@
 CXX := g++
-CXXFLAGS := -O3 -g -Wall -std=c++11
+CXXFLAGS := -O3 -Wall -Werror -pedantic -std=c++20
 SRC_DIR := src/
 BUILD_DIR := build/
 PROG_NAME := synthetic-tests-simulator
 PROG := $(BUILD_DIR)$(PROG_NAME)
+CODE_STYLE := WebKit
 
 SRCS := $(wildcard $(SRC_DIR)*.cc)
+H_FILES := $(wildcard $(SRC_DIR)*.h)
 OBJS := $(SRCS:$(SRC_DIR)%.cc=$(BUILD_DIR)%.o)
+DEPENDS := $(OBJS:%.o=%.d)
+
+ifneq ($(shell which podman 2>/dev/null),)
+	CONTAINER_CLI := $(shell which podman)
+	MOUNT_OPTIONS := :Z
+else ifneq ($(shell which docker 2>/dev/null),)
+	CONTAINER_CLI := $(shell which docker)
+	MOUNT_OPTIONS :=
+else
+	$(error "No container cli installed found")
+endif
 
 .PHONY: all
 all: $(PROG)
@@ -15,16 +28,8 @@ $(PROG): $(OBJS) | build_dir
 	$(CXX) $(CXXFLAGS) -o $(PROG) $^
 
 $(BUILD_DIR)%.o: $(SRC_DIR)%.cc | build_dir
-	$(CXX) $(CXXFLAGS) -c -MD -o $@ $<
-	@c=$$(cat '$(BUILD_DIR)$*.d') && echo "$$c" >> '$(BUILD_DIR)$*.d'
-	@awk -i inplace '{\
-		if (/$(subst /,\/,$(BUILD_DIR)$*.o: )/ && count < 1) { \
-			gsub("$(BUILD_DIR)$*.o: ","$(BUILD_DIR)$*.d: $$(wildcard ") \
-			count++ \
-		} \
-		if (!/\\$$/ && count < 1) { gsub("$$",")") count++ } \
-		print \
-	}' $(BUILD_DIR)$*.d
+	$(CXX) $(CXXFLAGS) -MM -MP -MT '$@' -o $(patsubst %.o,%.d,$@) $<
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 .PHONY: build_dir
 build_dir: $(BUILD_DIR)
@@ -32,8 +37,22 @@ build_dir: $(BUILD_DIR)
 $(BUILD_DIR):
 	mkdir -p $@
 
+
 -include $(DEPENDS)
 
+.PHONY: lint
+lint:
+	@$(CONTAINER_CLI) run -t --rm -v $(PWD):/workdir$(MOUNT_OPTIONS) \
+		-w /workdir \
+		neszt/cppcheck-docker \
+		cppcheck --enable=warning .
+
+.PHONY: format
+format:
+	@$(CONTAINER_CLI) run -t --rm -v $(PWD):/workdir$(MOUNT_OPTIONS) \
+		-w /workdir \
+		unibeautify/clang-format \
+		-i -style=$(CODE_STYLE) $(SRCS) $(H_FILES)
 
 MAX_RUNS ?= 50
 MIN_TESTS ?= 2

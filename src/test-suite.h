@@ -1,21 +1,20 @@
-#ifndef __TEST_SUITE_H_INCLUDED__
-#define __TEST_SUITE_H_INCLUDED__
+#ifndef TEST_SUITE_H_INCLUDED
+#define TEST_SUITE_H_INCLUDED
 
 #include <cstdint>
 #include <vector>
 
-struct TestSuite
-{
+struct TestSuite {
     TestSuite(uint32_t);
-    virtual ~TestSuite() { };
+    virtual ~TestSuite() {};
 
-    virtual std::vector<uint32_t> generate_tests(void) =0;
+    virtual std::vector<uint32_t> generate_tests(void) = 0;
+
 protected:
     uint32_t n;
 };
 
-struct ListTestSuite : public TestSuite
-{
+struct ListTestSuite : public TestSuite {
     ListTestSuite(uint32_t);
 
     std::vector<uint32_t> generate_tests(void);
