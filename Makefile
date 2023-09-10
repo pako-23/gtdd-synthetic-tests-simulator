@@ -61,7 +61,7 @@ TESTS_STEP ?= 10
 TIMEOUT ?= 30m
 make-experiment = for j in $$(seq 1 $(MAX_RUNS)); do \
 		for i in $$(seq $(MIN_TESTS) $(TESTS_STEP) $(MAX_TESTS)); do \
-			timeout $(TIMEOUT) $(PROG) -t="$$i" -g="$1" -a="$2"; \
+			timeout $(TIMEOUT) $(PROG) -t="$$i" -g="$1" -a="$2" || true; \
 		done \
 	done
 
