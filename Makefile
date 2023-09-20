@@ -128,6 +128,35 @@ out-degree-pradet: all
 	$(call make-experiment,out-degree,pradet)
 
 
+ifneq ($(wildcard ./results),)
+ifneq ($(shell which gnuplot 2>/dev/null),)
+
+PLOTS_DIR := plots/
+GNUPLOT_SCRIPTS_DIR := gnuplot/
+GNUPLOT_SCRIPTS := $(wildcard $(GNUPLOT_SCRIPTS_DIR)*.gp)
+PLOTS := $(GNUPLOT_SCRIPTS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%.pdf)
+
+.PHONY: plots_dir
+plots_dir: $(PLOTS_DIR)
+
+$(PLOTS_DIR):
+	mkdir -p $@
+
+
+$(PLOTS_DIR)%.pdf: $(GNUPLOT_SCRIPTS_DIR)%.gp | plots_dir
+	gnuplot $^
+
+.PHONY: plots
+plots: $(PLOTS)
+
+endif
+endif
+
+
+
 .PHONY: clean
 clean:
 	@rm -rf $(BUILD_DIR)
+ifdef PLOTS_DIR
+	@rm -rf $(PLOTS_DIR)
+endif
