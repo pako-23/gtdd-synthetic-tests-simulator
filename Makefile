@@ -134,7 +134,13 @@ ifneq ($(shell which gnuplot 2>/dev/null),)
 PLOTS_DIR := plots/
 GNUPLOT_SCRIPTS_DIR := gnuplot/
 GNUPLOT_SCRIPTS := $(wildcard $(GNUPLOT_SCRIPTS_DIR)*.gp)
-PLOTS := $(GNUPLOT_SCRIPTS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%.pdf)
+
+STATS_FILES := $(shell find ./results -name stats.csv)
+DAT_FILES := $(STATS_FILES:%.csv=%.dat)
+
+PLOTS := $(GNUPLOT_SCRIPTS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%-barabasi-albert.pdf) \
+	$(GNUPLOT_SCRIPTS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%-erdos-renyi.pdf) \
+	$(GNUPLOT_SCRIPTS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%-out-degree-3-3.pdf)
 
 .PHONY: plots_dir
 plots_dir: $(PLOTS_DIR)
@@ -142,9 +148,17 @@ plots_dir: $(PLOTS_DIR)
 $(PLOTS_DIR):
 	mkdir -p $@
 
+%.dat: %.csv
+	$(GNUPLOT_SCRIPTS_DIR)compute-stats.py $^
 
-$(PLOTS_DIR)%.pdf: $(GNUPLOT_SCRIPTS_DIR)%.gp | plots_dir
-	gnuplot $^
+$(PLOTS_DIR)%-barabasi-albert.pdf: $(GNUPLOT_SCRIPTS_DIR)%.gp  $(DAT_FILES) | plots_dir
+	gnuplot $<
+
+$(PLOTS_DIR)%-erdos-renyi.pdf: $(GNUPLOT_SCRIPTS_DIR)%.gp $(DAT_FILES) | plots_dir
+	gnuplot $<
+
+$(PLOTS_DIR)%-out-degree-3-3.pdf: $(GNUPLOT_SCRIPTS_DIR)%.gp $(DAT_FILES) | plots_dir
+	gnuplot $<
 
 .PHONY: plots
 plots: $(PLOTS)
@@ -152,11 +166,10 @@ plots: $(PLOTS)
 endif
 endif
 
-
-
 .PHONY: clean
 clean:
 	@rm -rf $(BUILD_DIR)
 ifdef PLOTS_DIR
 	@rm -rf $(PLOTS_DIR)
+	@rm -rf $(DAT_FILES)
 endif
