@@ -11,6 +11,6 @@ do for [graph in graph_generators] {
   set output './plots/test-runs-'.graph.'.pdf'
 
   plot './results/ex-linear/'.graph.'/stats.dat' using 1:8:7:11:10 title 'Ex Linear' with candlesticks whiskerbars, \
-       './results/pradet/'.graph.'/stats.dat' using 1:8:7:11:10 title 'Pradet' with candlesticks whiskerbars
-
+       './results/pradet/'.graph.'/stats.dat' using 1:8:7:11:10 title 'Pradet' with candlesticks whiskerbars, \
+       './results/big-table/'.graph.'/stats.dat' using 1:8:7:11:10 title 'mem-fast' with candlesticks whiskerbars
 }

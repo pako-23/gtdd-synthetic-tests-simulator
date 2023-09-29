@@ -10,5 +10,6 @@ do for [graph in graph_generators] {
   set output './plots/relative-longest-'.graph.'.pdf'
 
   plot './results/ex-linear/'.graph.'/stats.dat' using 1:($18/$1):($17/$1):($21/$1):($20/$1) title 'Ex Linear' with candlesticks whiskerbars, \
-       './results/pradet/'.graph.'/stats.dat' using 1:($18/$1):($17/$1):($21/$1):($20/$1) title 'Pradet' with candlesticks whiskerbars
+       './results/pradet/'.graph.'/stats.dat' using 1:($18/$1):($17/$1):($21/$1):($20/$1) title 'Pradet' with candlesticks whiskerbars, \
+       './results/big-table/'.graph.'/stats.dat' using 1:($18/$1):($17/$1):($21/$1):($20/$1) title 'mem-fast' with candlesticks whiskerbars
 }
