@@ -6,6 +6,7 @@
 #include <iterator>
 #include <random>
 #include <set>
+#include <sstream>
 
 Graph::Graph(const std::vector<uint32_t>& nodes)
     : graph {}
@@ -93,17 +94,15 @@ void Graph::transitive_reduction()
     }
 }
 
-GraphGenerator::GraphGenerator(const std::vector<uint32_t>& nodes)
-    : graph { nodes }
+GraphGenerator::GraphGenerator(Graph& graph)
+    : graph { graph }
 {
 }
 
-ErdosRenyiGenerator::ErdosRenyiGenerator(const std::vector<uint32_t>& nodes,
+ErdosRenyiGenerator::ErdosRenyiGenerator(Graph& graph,
     double p)
-    : GraphGenerator { nodes }
-    , prob { p == std::numeric_limits<double>::infinity()
-            ? log(nodes.size()) / nodes.size()
-            : p }
+    : GraphGenerator { graph }
+    , prob { p > 1 ? log(graph.size()) / graph.size() : p }
 {
 }
 
@@ -120,8 +119,8 @@ void ErdosRenyiGenerator::generate_edges()
 }
 
 BarabasiAlbertGenerator::BarabasiAlbertGenerator(
-    const std::vector<uint32_t>& nodes)
-    : GraphGenerator { nodes }
+    Graph& graph)
+    : GraphGenerator { graph }
 {
 }
 
@@ -162,10 +161,10 @@ void BarabasiAlbertGenerator::generate_edges()
     graph.transitive_reduction();
 }
 
-OutDegreeGenerator::OutDegreeGenerator(const std::vector<uint32_t>& nodes,
+OutDegreeGenerator::OutDegreeGenerator(Graph& graph,
     uint32_t min_degree,
     uint32_t max_degree)
-    : GraphGenerator { nodes }
+    : GraphGenerator { graph }
     , min_degree { min_degree }
     , max_degree { max_degree }
 {
@@ -195,7 +194,7 @@ void OutDegreeGenerator::generate_edges()
 std::ostream&
 operator<<(std::ostream& os, const Graph& g)
 {
-    os << "digraph G {" << std::endl;
+    os << "digraph {" << std::endl;
 
     for (const auto& it : g)
         os << "    " << it.first << ";" << std::endl;
@@ -205,4 +204,28 @@ operator<<(std::ostream& os, const Graph& g)
             os << "    " << it.first << " -> " << target << ";" << std::endl;
 
     return os << "}" << std::endl;
+}
+
+std::istream&
+operator>>(std::istream& is, Graph& g)
+{
+    std::string line;
+    std::getline(is, line);
+    g.graph.clear();
+
+    while (std::getline(is, line)) {
+        if (line == "}")
+            break;
+        uint32_t u, v;
+        std::string arrow;
+        std::istringstream iss { line };
+        iss >> u;
+
+        if (iss >> arrow >> v)
+            g.add_edge(u, v);
+        else
+            g.graph[u] = std::unordered_set<uint32_t> {};
+    }
+
+    return is;
 }

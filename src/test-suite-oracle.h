@@ -6,31 +6,34 @@
 #include <memory>
 #include <vector>
 
-struct TestSuiteOracle {
+class TestSuiteOracle {
+public:
     virtual ~TestSuiteOracle() {}
     virtual std::vector<bool> run_tests(const std::vector<uint32_t>&) = 0;
+    virtual std::vector<uint32_t> tests() const = 0;
 };
 
-struct GraphGeneratorParams {
+class GraphGeneratorParams {
+public:
     std::string generator_type;
     double probability;
     uint32_t min_out;
     uint32_t max_out;
 };
 
-struct DirectDependenciesOracle : public TestSuiteOracle {
+class DirectDependenciesOracle : public TestSuiteOracle {
+public:
     DirectDependenciesOracle(const std::vector<uint32_t>&,
         const GraphGeneratorParams&);
+    DirectDependenciesOracle(const Graph&);
     ~DirectDependenciesOracle() override {}
 
+    std::vector<uint32_t> tests() const;
     std::vector<bool> run_tests(const std::vector<uint32_t>&);
-    inline const std::shared_ptr<GraphGenerator> get_generator() const
-    {
-        return graph_generator;
-    };
+    inline const Graph& get_graph() const { return graph; }
 
 private:
-    std::shared_ptr<GraphGenerator> graph_generator;
+    Graph graph;
 };
 
 #endif

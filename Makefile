@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -O3 -Wall -Werror -pedantic -std=c++20
+CXXFLAGS := -g -Wall -Werror -pedantic -std=c++20
 SRC_DIR := src/
 BUILD_DIR := build/
 PROG_NAME := synthetic-tests-simulator
@@ -56,86 +56,116 @@ endif
 
 MAX_RUNS ?= 50
 MIN_TESTS ?= 2
-MAX_TESTS ?= 500
+MAX_TESTS ?= 50
 TESTS_STEP ?= 10
 TIMEOUT ?= 30m
-make-experiment = for j in $$(seq 1 $(MAX_RUNS)); do \
-		for i in $$(seq $(MIN_TESTS) $(TESTS_STEP) $(MAX_TESTS)); do \
-			timeout $(TIMEOUT) $(PROG) -t="$$i" -g="$1" -a="$2" || true; \
-		done \
-	done
+RESULTS_DIR := ./results/
+
+define EXP_FILES
+for i in $$(seq $(MIN_TESTS) $(TESTS_STEP) $(MAX_TESTS)); do \
+	for j in $$(seq 1 $(MAX_RUNS)); do \
+		echo $(RESULTS_DIR)$1/$$i/graph-$$j.$2; \
+	done \
+done
+endef
+
+define EXP_DIRS
+for i in $$(seq $(MIN_TESTS) $(TESTS_STEP) $(MAX_TESTS)); do \
+	echo $(RESULTS_DIR)$1/$$i/; \
+done
+endef
 
 .PHONY: experiments
-experiments: big-table \
-	pradet \
-	ex-linear
+experiments: pradet_experiments pfast_experiments mem_fast_experiments
 
 
-# big-table experiments
-.PHONY: big-table
-big-table: barabasi-albert-big-table \
-	erdos-renyi-big-table \
-	out-degree-big-table
+.PHONY: pradet_experiments
+pradet_experiments: $(shell $(call EXP_FILES,experiments/pradet/barabasi-albert,dot)) \
+	$(shell $(call EXP_FILES,experiments/pradet/erdos-renyi,dot)) \
+	$(shell $(call EXP_FILES,experiments/pradet/out-degree-3-3,dot))
 
-.PHONY: barabasi-albert-big-table
-barabasi-albert-big-table: all
-	$(call make-experiment,barabasi-albert,big-table)
+.PHONY: pfast_experiments
+pfast_experiments: $(shell $(call EXP_FILES,experiments/pfast/barabasi-albert,dot)) \
+	$(shell $(call EXP_FILES,experiments/pfast/erdos-renyi,dot)) \
+	$(shell $(call EXP_FILES,experiments/pfast/out-degree-3-3,dot))
 
-.PHONY: erdos-renyi-big-table
-erdos-renyi-big-table: all
-	$(call make-experiment,erdos-renyi,big-table)
-
-.PHONY: out-degree-big-table
-out-degree-big-table: all
-	$(call make-experiment,out-degree,big-table)
+.PHONY: mem_fast_experiments
+mem_fast_experiments: $(shell $(call EXP_FILES,experiments/mem-fast/barabasi-albert,txt)) \
+	$(shell $(call EXP_FILES,experiments/mem-fast/erdos-renyi,txt)) \
+	$(shell $(call EXP_FILES,experiments/mem-fast/out-degree-3-3,txt))
 
 
-# ex-linear experiments
-.PHONY: ex-linear
-ex-linear: barabasi-albert-ex-linear \
-	erdos-renyi-ex-linear \
-	out-degree-ex-linear
+$(RESULTS_DIR)experiments/pradet/barabasi-albert/%.dot: $(RESULTS_DIR)graphs/barabasi-albert/%.dot  all | experiment_dirs
+	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
-.PHONY: barabasi-albert-ex-linear
-barabasi-albert-ex-linear: all
-	$(call make-experiment,barabasi-albert,ex-linear)
+$(RESULTS_DIR)experiments/pradet/erdos-renyi/%.dot: $(RESULTS_DIR)graphs/erdos-renyi/%.dot  all | experiment_dirs
+	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
-.PHONY: erdos-renyi-ex-linear
-erdos-renyi-ex-linear: all
-	$(call make-experiment,erdos-renyi,ex-linear)
-
-.PHONY: out-degree-ex-linear
-out-degree-ex-linear: all
-	$(call make-experiment,out-degree,ex-linear)
+$(RESULTS_DIR)experiments/pradet/out-degree-3-3/%.dot: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot  all | experiment_dirs
+	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
 
-# pradet experiments
-.PHONY: pradet
-pradet: barabasi-albert-pradet \
-	erdos-renyi-pradet \
-	out-degree-pradet
+$(RESULTS_DIR)experiments/mem-fast/barabasi-albert/%.txt: $(RESULTS_DIR)graphs/barabasi-albert/%.dot  all | experiment_dirs
+	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a mem-fast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
-.PHONY: barabasi-albert-pradet
-barabasi-albert-pradet: all
-	$(call make-experiment,barabasi-albert,pradet)
+$(RESULTS_DIR)experiments/mem-fast/erdos-renyi/%.txt: $(RESULTS_DIR)graphs/erdos-renyi/%.dot  all | experiment_dirs
+	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a mem-fast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
-.PHONY: erdos-renyi-pradet
-erdos-renyi-pradet: all
-	$(call make-experiment,erdos-renyi,pradet)
-
-.PHONY: out-degree-pradet
-out-degree-pradet: all
-	$(call make-experiment,out-degree,pradet)
+$(RESULTS_DIR)experiments/mem-fast/out-degree-3-3/%.txt: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot  all | experiment_dirs
+	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a mem-fast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
 
-ifneq ($(wildcard ./results),)
+$(RESULTS_DIR)experiments/pfast/barabasi-albert/%.dot: $(RESULTS_DIR)graphs/barabasi-albert/%.dot  all | experiment_dirs
+	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
+
+$(RESULTS_DIR)experiments/pfast/erdos-renyi/%.dot: $(RESULTS_DIR)graphs/erdos-renyi/%.dot  all | experiment_dirs
+	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
+
+$(RESULTS_DIR)experiments/pfast/out-degree-3-3/%.dot: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot  all | experiment_dirs
+	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
+
+
+.PRECIOUS: $(RESULTS_DIR)graphs/barabasi-albert/%.dot
+$(RESULTS_DIR)graphs/barabasi-albert/%.dot: all | graph_dirs all
+	$(PROG) generate -t "$$(basename "$$(dirname $@)")" -g barabasi-albert -o $@
+
+.PRECIOUS: $(RESULTS_DIR)graphs/erdos-renyi/%.dot
+$(RESULTS_DIR)graphs/erdos-renyi/%.dot: all | graph_dirs all
+	$(PROG) generate -t "$$(basename "$$(dirname $@)")" -g erdos-renyi -o $@
+
+.PRECIOUS: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot
+$(RESULTS_DIR)graphs/out-degree-3-3/%.dot: all | graph_dirs
+	$(PROG) generate -t "$$(basename "$$(dirname $@)")" -g out-degree -o $@
+
+
+.PHONY: graph_dirs
+graph_dirs: $(shell $(call EXP_DIRS,graphs/barabasi-albert)) \
+	$(shell $(call EXP_DIRS,graphs/erdos-renyi)) \
+	$(shell $(call EXP_DIRS,graphs/out-degree-3-3))
+
+.PHONY: experiment_dirs
+experiment_dirs: $(shell $(call EXP_DIRS,experiments/pradet/barabasi-albert)) \
+	$(shell $(call EXP_DIRS,experiments/pradet/erdos-renyi)) \
+	$(shell $(call EXP_DIRS,experiments/pradet/out-degree-3-3)) \
+	$(shell $(call EXP_DIRS,experiments/mem-fast/barabasi-albert)) \
+	$(shell $(call EXP_DIRS,experiments/mem-fast/erdos-renyi)) \
+	$(shell $(call EXP_DIRS,experiments/mem-fast/out-degree-3-3)) \
+	$(shell $(call EXP_DIRS,experiments/pfast/barabasi-albert)) \
+	$(shell $(call EXP_DIRS,experiments/pfast/erdos-renyi)) \
+	$(shell $(call EXP_DIRS,experiments/pfast/out-degree-3-3))
+
+$(RESULTS_DIR)%/:
+	mkdir -p $@
+
+
+ifneq ($(wildcard $(RESULTS_DIR)experiments),)
 ifneq ($(shell which gnuplot 2>/dev/null),)
 
 PLOTS_DIR := plots/
 GNUPLOT_SCRIPTS_DIR := gnuplot/
 GNUPLOT_SCRIPTS := $(wildcard $(GNUPLOT_SCRIPTS_DIR)*.gp)
 
-STATS_FILES := $(shell find ./results -name stats.csv)
+STATS_FILES := $(shell find $(RESULTS_DIR)experiments -name stats.csv)
 DAT_FILES := $(STATS_FILES:%.csv=%.dat)
 
 PLOTS := $(GNUPLOT_SCRIPTS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%-barabasi-albert.pdf) \

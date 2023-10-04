@@ -7,8 +7,13 @@
 #include <unordered_set>
 #include <vector>
 
-struct Graph {
+class Graph {
+public:
+    friend std::istream& operator>>(std::istream&, Graph&);
+
     Graph(const std::vector<uint32_t>&);
+    Graph()
+        : graph {} {};
 
     void add_edge(uint32_t, uint32_t);
     void remove_edge(uint32_t, uint32_t);
@@ -43,19 +48,20 @@ protected:
     std::map<uint32_t, std::unordered_set<uint32_t>> graph;
 };
 
-struct GraphGenerator {
-    GraphGenerator(const std::vector<uint32_t>&);
+class GraphGenerator {
+public:
+    GraphGenerator(Graph&);
     virtual ~GraphGenerator() {};
 
     virtual void generate_edges(void) = 0;
-    inline const Graph& get_graph(void) const { return graph; };
 
 protected:
-    Graph graph;
+    Graph& graph;
 };
 
-struct ErdosRenyiGenerator : public GraphGenerator {
-    ErdosRenyiGenerator(const std::vector<uint32_t>&, double);
+class ErdosRenyiGenerator : public GraphGenerator {
+public:
+    ErdosRenyiGenerator(Graph&, double);
 
     void generate_edges(void);
 
@@ -63,14 +69,16 @@ private:
     double prob;
 };
 
-struct BarabasiAlbertGenerator : public GraphGenerator {
-    BarabasiAlbertGenerator(const std::vector<uint32_t>&);
+class BarabasiAlbertGenerator : public GraphGenerator {
+public:
+    BarabasiAlbertGenerator(Graph&);
 
     void generate_edges(void);
 };
 
-struct OutDegreeGenerator : public GraphGenerator {
-    OutDegreeGenerator(const std::vector<uint32_t>&, uint32_t, uint32_t);
+class OutDegreeGenerator : public GraphGenerator {
+public:
+    OutDegreeGenerator(Graph&, uint32_t, uint32_t);
 
     void generate_edges(void);
 
@@ -81,5 +89,8 @@ private:
 
 std::ostream&
 operator<<(std::ostream&, const Graph&);
+
+std::istream&
+operator>>(std::istream&, Graph&);
 
 #endif

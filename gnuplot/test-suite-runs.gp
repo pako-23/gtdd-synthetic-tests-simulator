@@ -9,7 +9,7 @@ graph_generators = "barabasi-albert erdos-renyi out-degree-3-3"
 do for [graph in graph_generators] {
   set output './plots/test-suite-runs-'.graph.'.pdf'
 
-  plot './results/ex-linear/'.graph.'/stats.dat' using 1:3:2:6:5  title 'Ex Linear' with candlesticks whiskerbars, \
-       './results/pradet/'.graph.'/stats.dat' using 1:3:2:6:5 title 'Pradet' with candlesticks whiskerbars, \
-       './results/big-table/'.graph.'/stats.dat' using 1:3:2:6:5 title 'mem-fast' with candlesticks whiskerbars
+  plot './results/experiments/pfast/'.graph.'/stats.dat' using 1:3:2:6:5  title 'PFAST' with candlesticks whiskerbars, \
+       './results/experiments/pradet/'.graph.'/stats.dat' using 1:3:2:6:5 title 'PraDet' with candlesticks whiskerbars, \
+       './results/experiments/mem-fast/'.graph.'/stats.dat' using 1:3:2:6:5 title 'MEM-FAST' with candlesticks whiskerbars
 }

@@ -4,7 +4,8 @@
 #include <cstdint>
 #include <vector>
 
-struct TestSuite {
+class TestSuite {
+public:
     TestSuite(uint32_t);
     virtual ~TestSuite() {};
 
@@ -14,7 +15,8 @@ protected:
     uint32_t n;
 };
 
-struct ListTestSuite : public TestSuite {
+class ListTestSuite : public TestSuite {
+public:
     ListTestSuite(uint32_t);
 
     std::vector<uint32_t> generate_tests(void);

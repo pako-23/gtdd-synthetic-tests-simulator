@@ -1,29 +1,30 @@
 #include "algorithms.h"
 #include <algorithm>
 #include <cstring>
+#include <fcntl.h>
 #include <fstream>
+#include <iterator>
 #include <set>
+#include <sstream>
+#include <sys/file.h>
+#include <unistd.h>
 #include <utility>
 
-std::string& Metrics::get_header()
-{
-    static std::string header = "n,test_suite_runs,test_runs,"
-                                "optimal_longest_schedule,longest_schedule,"
-                                "optimal_total_cost,total_cost";
-    return header;
-}
+const std::string Metrics::header { "n,test_suite_runs,test_runs,"
+                                    "optimal_longest_schedule,longest_schedule,"
+                                    "optimal_total_cost,total_cost" };
 
-void Metrics::schedule_metrics(const schedule_list& schedules)
+void Metrics::schedule_metrics(const std::vector<schedule>& schedules)
 {
     compute_metrics(schedules, longest_schedule, total_cost);
 }
 
-void Metrics::optimal_schedule_metrics(const schedule_list& schedules)
+void Metrics::optimal_schedule_metrics(const std::vector<schedule>& schedules)
 {
     compute_metrics(schedules, optimal_longest_schedule, optimal_total_cost);
 }
 
-void Metrics::compute_metrics(const schedule_list& schedules, uint64_t& length, uint64_t& cost)
+void Metrics::compute_metrics(const std::vector<schedule>& schedules, uint64_t& length, uint64_t& cost)
 {
     for (const auto& schedule : schedules) {
         length = std::max(length, schedule.size());
@@ -31,20 +32,78 @@ void Metrics::compute_metrics(const schedule_list& schedules, uint64_t& length, 
     }
 }
 
-void ExLinear::run(const std::vector<uint32_t>& tests, TestSuiteOracle* oracle, Metrics& m)
+void Metrics::record(const char* fname)
 {
-    Graph g { tests };
+    int fd = open(fname, O_WRONLY | O_CREAT, 0644);
+    if (fd < 0 || flock(fd, LOCK_EX) != 0) {
+        std::cerr << "Failed to write into stats file " << fname
+                  << " with error \"" << strerror(errno) << '"' << std::endl;
+        return;
+    }
+    std::ostringstream oss;
 
-    for (uint32_t i = 0; i < tests.size(); ++i) {
+    if (lseek(fd, 0, SEEK_END) == 0)
+        oss << Metrics::header << std::endl;
+    oss << *this << std::endl;
+    write(fd, oss.str().c_str(), oss.str().size());
+
+    flock(fd, LOCK_UN);
+    close(fd);
+}
+
+void GraphResult::output(const char* fname)
+{
+    if (!fname)
+        std::cout << g;
+    std::ofstream out { fname };
+    out << g;
+    out.close();
+}
+
+void TableResult::output(const char* fname)
+{
+    if (!fname) {
+        write_schedules(std::cout);
+        return;
+    }
+    std::ofstream out { fname };
+
+    write_schedules(out);
+    out.close();
+}
+
+void TableResult::write_schedules(std::ostream& os)
+{
+    for (const auto& schedules : table)
+        for (const auto& schedule : schedules.second) {
+            if (schedule.size() == 0)
+                continue;
+            std::copy(schedule.begin(), schedule.end() - 1, std::ostream_iterator<uint32_t>(os, ","));
+            os << schedule.back() << std::endl;
+        }
+}
+
+std::unique_ptr<Result> PFAST::run(const std::vector<uint32_t>& tests, TestSuiteOracle* oracle, Metrics& m)
+{
+    GraphResult* r { new GraphResult { tests } };
+
+    if (tests.size() == 0)
+        return std::unique_ptr<Result> { r };
+
+    for (uint32_t i = 0; i < tests.size() - 1; ++i) {
         std::vector<uint32_t> schedule { tests };
         schedule.erase(schedule.begin() + i);
 
         m.add_testsuite_run();
+
         std::vector<bool> results = oracle->run_tests(schedule);
         auto first_false = std::find(results.begin(), results.end(), false);
         m.add_test_runs(first_false - results.begin());
         while (first_false != results.end()) {
-            g.add_edge(schedule[first_false - results.begin()], tests[i]);
+            m.add_test_runs(1);
+            r->g.add_edge(schedule[first_false - results.begin()], tests[i]);
+            if (first_false == results.end() - 1)
+                break;
             schedule.erase(schedule.begin() + (first_false - results.begin()));
             results = oracle->run_tests(schedule);
             m.add_testsuite_run();
@@ -53,49 +112,50 @@ void ExLinear::run(const std::vector<uint32_t>& tests, TestSuiteOracle* oracle, 
         }
     }
 
-    g.transitive_reduction();
-    std::ofstream out { results_file };
-    out << g;
-    out.close();
-    m.schedule_metrics(g.get_schedules());
+    r->g.transitive_reduction();
+    m.schedule_metrics(r->g.get_schedules());
+    return std::unique_ptr<Result> { r };
 }
 
-void Pradet::invert_edge(Graph& g, uint32_t u, uint32_t v)
+void PraDet::invert_edge(Graph& g, uint32_t u, uint32_t v)
 {
     g.remove_edge(u, v);
     g.add_edge(v, u);
 }
 
-void Pradet::run(const std::vector<uint32_t>& tests, TestSuiteOracle* oracle, Metrics& m)
+std::unique_ptr<Result> PraDet::run(const std::vector<uint32_t>& tests, TestSuiteOracle* oracle, Metrics& m)
 {
-    Graph g { tests };
+    GraphResult* r { new GraphResult { tests } };
     std::set<std::pair<uint32_t, uint32_t>> edges {};
     uint32_t tried_edges { 0 };
 
+    if (tests.size() == 0)
+        return std::unique_ptr<Result> { r };
+
     // Build fully connected graph
-    for (auto it1 = g.begin(); it1 != g.end(); ++it1)
-        for (auto it2 = std::next(it1); it2 != g.end(); ++it2) {
+    for (auto it1 = r->g.begin(); it1 != r->g.end(); ++it1)
+        for (auto it2 = std::next(it1); it2 != r->g.end(); ++it2) {
             edges.insert(std::make_pair(it2->first, it1->first));
-            g.add_edge(it2->first, it1->first);
+            r->g.add_edge(it2->first, it1->first);
         }
 
     auto edge { edges.begin() };
     while (!edges.empty()) {
         // Select one edge from the graph
-        invert_edge(g, edge->first, edge->second);
+        invert_edge(r->g, edge->first, edge->second);
         ++tried_edges;
-        std::unordered_set<uint32_t> deps { g.get_dependencies(edge->second) };
+        std::unordered_set<uint32_t> deps { r->g.get_dependencies(edge->second) };
         while (deps.find(edge->second) != deps.end()) {
             if (tried_edges == edges.size()) {
                 edge = edges.end();
                 break;
             }
-            invert_edge(g, edge->second, edge->first);
+            invert_edge(r->g, edge->second, edge->first);
             if (++edge == edges.end())
                 edge = edges.begin();
             ++tried_edges;
-            invert_edge(g, edge->first, edge->second);
-            deps = g.get_dependencies(edge->second);
+            invert_edge(r->g, edge->first, edge->second);
+            deps = r->g.get_dependencies(edge->second);
         }
 
         if (edge == edges.end())
@@ -111,14 +171,17 @@ void Pradet::run(const std::vector<uint32_t>& tests, TestSuiteOracle* oracle, Me
         // Run schedule to get results
         std::vector<bool> results = oracle->run_tests(schedule);
         auto first_false = std::find(results.begin(), results.end(), false);
+
         m.add_test_runs(first_false - results.begin());
         m.add_testsuite_run();
 
         // Remove the inverted edge and add the original edge back in case
         // some test fails
-        g.remove_edge(edge->second, edge->first);
-        if (first_false != results.end())
-            g.add_edge(edge->first, edge->second);
+        r->g.remove_edge(edge->second, edge->first);
+        if (first_false != results.end()) {
+            m.add_test_runs(1);
+            r->g.add_edge(edge->first, edge->second);
+        }
 
         edge = edges.erase(edge);
         tried_edges = 0;
@@ -126,16 +189,14 @@ void Pradet::run(const std::vector<uint32_t>& tests, TestSuiteOracle* oracle, Me
             edge = edges.begin();
     }
 
-    g.transitive_reduction();
-    std::ofstream out { results_file };
-    out << g;
-    out.close();
-    m.schedule_metrics(g.get_schedules());
+    r->g.transitive_reduction();
+    m.schedule_metrics(r->g.get_schedules());
+    return std::unique_ptr<Result> { r };
 }
 
-schedule_list table_to_schedules(const std::map<uint32_t, schedule_list>& table)
+std::vector<schedule> table_to_schedules(const std::map<uint32_t, std::set<schedule>>& table)
 {
-    schedule_list initial_scan, schedules;
+    std::vector<schedule> initial_scan, schedules;
     std::unordered_set<uint32_t> covered;
 
     for (const auto& it : table) {
@@ -163,100 +224,126 @@ schedule_list table_to_schedules(const std::map<uint32_t, schedule_list>& table)
     return schedules;
 }
 
-void BigTable::run(const std::vector<uint32_t>& tests, TestSuiteOracle* oracle, Metrics& m)
+std::unique_ptr<Result> MEMFAST::run(const std::vector<uint32_t>& tests, TestSuiteOracle* oracle, Metrics& m)
 {
-    std::unordered_set<uint32_t> not_passed {};
-    std::map<uint32_t, schedule_list> table;
-    std::set<schedule> working_schedules {};
+    std::set<uint32_t> not_passed {};
+    TableResult* r { new TableResult {} };
+
+    if (tests.size() == 0)
+        return std::unique_ptr<Result> { r };
 
     for (const uint32_t t : tests) {
         schedule schedule { { t } };
-        if (oracle->run_tests(schedule)[0]) {
-            table[1].push_back(schedule);
-            working_schedules.insert(schedule);
-        } else
+        if (oracle->run_tests(schedule)[0])
+            r->table[1].insert(schedule);
+        else
             not_passed.insert(t);
     }
 
-    for (uint32_t rank { 2 }; rank <= tests.size(); ++rank) {
-        for (auto test = not_passed.begin(); test != not_passed.end();) {
-            bool test_passed { false };
+    uint32_t rank { 1 };
 
-            for (const auto& seq : table[rank - 1]) {
-                if (seq.back() > *test)
+    while (!not_passed.empty()) {
+
+        if (r->table.find(rank) == r->table.end())
+            goto ex_search;
+
+        for (const auto& seq : r->table[rank]) {
+            for (auto test { not_passed.begin() }; test != not_passed.end();) {
+                if (seq.back() > *test) {
+                    ++test;
                     continue;
+                }
                 schedule schedule { seq };
                 schedule.push_back(*test);
                 std::vector<bool> results = oracle->run_tests(schedule);
                 auto first_false { std::find(results.begin(), results.end(), false) };
-                m.add_test_runs(first_false - results.begin());
+
+                m.add_test_runs(first_false - results.begin() + (first_false == results.end() ? 0 : 1));
                 m.add_testsuite_run();
                 if (first_false == results.end()) {
-                    working_schedules.insert(schedule);
-                    table[rank].push_back(schedule);
+                    r->table[schedule.size()].insert(schedule);
                     test = not_passed.erase(test);
-                    test_passed = true;
-                    break;
-                }
+                } else
+                    ++test;
             }
-
-            if (test_passed)
-                continue;
-
-            if (*test == rank - 1) {
-                for (auto base = working_schedules.begin();
-                     base != working_schedules.end();
-                     ++base) {
-                    for (auto it = std::next(base); it != working_schedules.end(); ++it) {
-                        schedule schedule { *base };
-                        schedule.insert(schedule.end(), it->begin(), it->end());
-                        std::sort(schedule.begin(), schedule.end());
-                        if (schedule.back() > *test)
-                            continue;
-                        schedule.erase(std::unique(schedule.begin(), schedule.end()),
-                            schedule.end());
-                        table[schedule.size() - 1].push_back(schedule);
-                        working_schedules.insert(schedule);
-                        if (schedule.back() < *test) {
-                            // Check if prefix makes pass our test
-                            schedule.push_back(*test);
-                            std::vector<bool> results = oracle->run_tests(schedule);
-                            auto first_false { std::find(
-                                results.begin(), results.end(), false) };
-                            m.add_test_runs(first_false - results.begin());
-                            m.add_testsuite_run();
-                            if (first_false == results.end()) {
-                                table[schedule.size() - 1].push_back(schedule);
-                                working_schedules.insert(schedule);
-                                test = not_passed.erase(test);
-                                test_passed = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (test_passed)
-                        break;
-                }
-                continue;
-            }
-
-            ++test;
         }
+    ex_search:
+        ++rank;
+        auto it { not_passed.begin() };
+        if (it == not_passed.end() || *it > rank - 1)
+            continue;
+
+        exhaustive_search(not_passed, r->table, oracle, m);
     }
 
-    m.schedule_metrics(table_to_schedules(table));
+    m.schedule_metrics(table_to_schedules(r->table));
+    return std::unique_ptr<Result> { r };
 }
 
-Algorithm*
-algorithm_factory(const std::string& algo, const std::string& file)
+void MEMFAST::exhaustive_search(std::set<uint32_t>& not_passed, std::map<uint32_t, std::set<schedule>>& table, TestSuiteOracle* oracle, Metrics& m)
+{
+    uint32_t target { *not_passed.begin() };
+
+    for (uint32_t len { 2 }; len <= target + 1; ++len) {
+        for (uint32_t f { 1 }; f <= len / 2; ++f) {
+            auto sets1 { table.find(f) }, sets2 { table.find(len - f) };
+
+            if (sets1 == table.end() || sets2 == table.end())
+                continue;
+
+            auto it1 { sets1->second.begin() };
+
+            for (; it1 != sets1->second.end(); ++it1) {
+                auto it2 { len - f == f ? std::next(it1) : sets2->second.begin() };
+                for (; it2 != sets2->second.end(); ++it2) {
+                    schedule seq { *it1 };
+
+                    seq.insert(seq.end(), it2->begin(), it2->end());
+                    std::sort(seq.begin(), seq.end());
+                    seq.erase(std::unique(seq.begin(), seq.end()), seq.end());
+                    table[seq.size()].insert(seq);
+
+                    bool target_passed { false };
+
+                    for (auto t { not_passed.begin() }; t != not_passed.end();) {
+                        if (seq.back() > *t) {
+                            ++t;
+                            continue;
+                        }
+
+                        schedule schedule { seq };
+                        schedule.push_back(*t);
+                        std::vector<bool> results = oracle->run_tests(schedule);
+                        auto first_false { std::find(results.begin(), results.end(), false) };
+
+                        m.add_test_runs(first_false - results.begin() + (first_false == results.end() ? 0 : 1));
+                        m.add_testsuite_run();
+                        if (first_false == results.end()) {
+                            target_passed = *t == target;
+                            table[schedule.size()].insert(schedule);
+                            t = not_passed.erase(t);
+                        } else
+                            ++t;
+                    }
+
+                    if (target_passed)
+                        return;
+                }
+            }
+        }
+    }
+}
+
+std::unique_ptr<Algorithm>
+algorithm_factory(const std::string& algo)
 {
     if (algo == "pradet")
-        return new Pradet { file };
-    else if (algo == "ex-linear")
-        return new ExLinear { file };
-    else if (algo == "big-table")
-        return new BigTable { file };
-    std::cerr << algo << " is not a valid method to generate graphs.";
+        return std::unique_ptr<Algorithm> { new PraDet {} };
+    else if (algo == "pfast")
+        return std::unique_ptr<Algorithm> { new PFAST {} };
+    else if (algo == "mem-fast")
+        return std::unique_ptr<Algorithm> { new MEMFAST {} };
+    std::cerr << algo << " is not a valid method to find dependencies between tests." << std::endl;
     exit(EXIT_FAILURE);
 }
 
