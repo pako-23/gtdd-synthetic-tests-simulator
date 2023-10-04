@@ -56,7 +56,7 @@ endif
 
 MAX_RUNS ?= 50
 MIN_TESTS ?= 2
-MAX_TESTS ?= 50
+MAX_TESTS ?= 500
 TESTS_STEP ?= 10
 TIMEOUT ?= 30m
 RESULTS_DIR := ./results/
