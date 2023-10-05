@@ -76,7 +76,7 @@ done
 endef
 
 .PHONY: experiments
-experiments: pradet_experiments pfast_experiments mem_fast_experiments
+experiments: pfast_experiments pradet_experiments mem_fast_experiments
 
 
 .PHONY: pradet_experiments
@@ -126,17 +126,16 @@ $(RESULTS_DIR)experiments/pfast/out-degree-3-3/%.dot: $(RESULTS_DIR)graphs/out-d
 
 
 .PRECIOUS: $(RESULTS_DIR)graphs/barabasi-albert/%.dot
-$(RESULTS_DIR)graphs/barabasi-albert/%.dot: all | graph_dirs all
+$(RESULTS_DIR)graphs/barabasi-albert/%.dot: all | graph_dirs
 	$(PROG) generate -t "$$(basename "$$(dirname $@)")" -g barabasi-albert -o $@
 
 .PRECIOUS: $(RESULTS_DIR)graphs/erdos-renyi/%.dot
-$(RESULTS_DIR)graphs/erdos-renyi/%.dot: all | graph_dirs all
+$(RESULTS_DIR)graphs/erdos-renyi/%.dot: all | graph_dirs
 	$(PROG) generate -t "$$(basename "$$(dirname $@)")" -g erdos-renyi -o $@
 
 .PRECIOUS: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot
 $(RESULTS_DIR)graphs/out-degree-3-3/%.dot: all | graph_dirs
 	$(PROG) generate -t "$$(basename "$$(dirname $@)")" -g out-degree -o $@
-
 
 .PHONY: graph_dirs
 graph_dirs: $(shell $(call EXP_DIRS,graphs/barabasi-albert)) \
