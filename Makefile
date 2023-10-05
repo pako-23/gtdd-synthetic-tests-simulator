@@ -95,46 +95,46 @@ mem_fast_experiments: $(shell $(call EXP_FILES,experiments/mem-fast/barabasi-alb
 	$(shell $(call EXP_FILES,experiments/mem-fast/out-degree-3-3,txt))
 
 
-$(RESULTS_DIR)experiments/pradet/barabasi-albert/%.dot: $(RESULTS_DIR)graphs/barabasi-albert/%.dot  all | experiment_dirs
+$(RESULTS_DIR)experiments/pradet/barabasi-albert/%.dot: $(RESULTS_DIR)graphs/barabasi-albert/%.dot $(PROG) | experiment_dirs
 	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
-$(RESULTS_DIR)experiments/pradet/erdos-renyi/%.dot: $(RESULTS_DIR)graphs/erdos-renyi/%.dot  all | experiment_dirs
+$(RESULTS_DIR)experiments/pradet/erdos-renyi/%.dot: $(RESULTS_DIR)graphs/erdos-renyi/%.dot $(PROG) | experiment_dirs
 	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
-$(RESULTS_DIR)experiments/pradet/out-degree-3-3/%.dot: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot  all | experiment_dirs
+$(RESULTS_DIR)experiments/pradet/out-degree-3-3/%.dot: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot $(PROG) | experiment_dirs
 	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
 
-$(RESULTS_DIR)experiments/mem-fast/barabasi-albert/%.txt: $(RESULTS_DIR)graphs/barabasi-albert/%.dot  all | experiment_dirs
+$(RESULTS_DIR)experiments/mem-fast/barabasi-albert/%.txt: $(RESULTS_DIR)graphs/barabasi-albert/%.dot $(PROG) | experiment_dirs
 	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a mem-fast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
-$(RESULTS_DIR)experiments/mem-fast/erdos-renyi/%.txt: $(RESULTS_DIR)graphs/erdos-renyi/%.dot  all | experiment_dirs
+$(RESULTS_DIR)experiments/mem-fast/erdos-renyi/%.txt: $(RESULTS_DIR)graphs/erdos-renyi/%.dot $(PROG) | experiment_dirs
 	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a mem-fast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
-$(RESULTS_DIR)experiments/mem-fast/out-degree-3-3/%.txt: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot  all | experiment_dirs
+$(RESULTS_DIR)experiments/mem-fast/out-degree-3-3/%.txt: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot $(PROG) | experiment_dirs
 	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a mem-fast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
 
-$(RESULTS_DIR)experiments/pfast/barabasi-albert/%.dot: $(RESULTS_DIR)graphs/barabasi-albert/%.dot  all | experiment_dirs
+$(RESULTS_DIR)experiments/pfast/barabasi-albert/%.dot: $(RESULTS_DIR)graphs/barabasi-albert/%.dot $(PROG) | experiment_dirs
 	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
-$(RESULTS_DIR)experiments/pfast/erdos-renyi/%.dot: $(RESULTS_DIR)graphs/erdos-renyi/%.dot  all | experiment_dirs
+$(RESULTS_DIR)experiments/pfast/erdos-renyi/%.dot: $(RESULTS_DIR)graphs/erdos-renyi/%.dot $(PROG) | experiment_dirs
 	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
-$(RESULTS_DIR)experiments/pfast/out-degree-3-3/%.dot: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot  all | experiment_dirs
+$(RESULTS_DIR)experiments/pfast/out-degree-3-3/%.dot: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot $(PROG) | experiment_dirs
 	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
 
 
 .PRECIOUS: $(RESULTS_DIR)graphs/barabasi-albert/%.dot
-$(RESULTS_DIR)graphs/barabasi-albert/%.dot: all | graph_dirs
+$(RESULTS_DIR)graphs/barabasi-albert/%.dot: $(PROG) | graph_dirs
 	$(PROG) generate -t "$$(basename "$$(dirname $@)")" -g barabasi-albert -o $@
 
 .PRECIOUS: $(RESULTS_DIR)graphs/erdos-renyi/%.dot
-$(RESULTS_DIR)graphs/erdos-renyi/%.dot: all | graph_dirs
+$(RESULTS_DIR)graphs/erdos-renyi/%.dot: $(PROG) | graph_dirs
 	$(PROG) generate -t "$$(basename "$$(dirname $@)")" -g erdos-renyi -o $@
 
 .PRECIOUS: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot
-$(RESULTS_DIR)graphs/out-degree-3-3/%.dot: all | graph_dirs
+$(RESULTS_DIR)graphs/out-degree-3-3/%.dot: $(PROG) | graph_dirs
 	$(PROG) generate -t "$$(basename "$$(dirname $@)")" -g out-degree -o $@
 
 .PHONY: graph_dirs
