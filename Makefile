@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -g -Wall -Werror -pedantic -std=c++20
+CXXFLAGS := -O3 -Wall -Werror -pedantic -std=c++20
 SRC_DIR := src/
 BUILD_DIR := build/
 PROG_NAME := synthetic-tests-simulator
