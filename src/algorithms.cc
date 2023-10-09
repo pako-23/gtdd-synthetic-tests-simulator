@@ -45,7 +45,9 @@ void Metrics::record(const char* fname)
     if (lseek(fd, 0, SEEK_END) == 0)
         oss << Metrics::header << std::endl;
     oss << *this << std::endl;
-    write(fd, oss.str().c_str(), oss.str().size());
+    if (write(fd, oss.str().c_str(), oss.str().size()) == -1)
+        std::cerr << "Failed to write into stats file " << fname
+                  << " with error \"" << strerror(errno) << '"' << std::endl;
 
     flock(fd, LOCK_UN);
     close(fd);
