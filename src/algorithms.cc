@@ -148,15 +148,15 @@ std::unique_ptr<Result> PraDet::run(const std::vector<uint32_t>& tests, TestSuit
         ++tried_edges;
         std::unordered_set<uint32_t> deps { r->g.get_dependencies(edge->second) };
         while (deps.find(edge->second) != deps.end()) {
+            invert_edge(r->g, edge->second, edge->first);
             if (tried_edges == edges.size()) {
                 edge = edges.end();
                 break;
             }
-            invert_edge(r->g, edge->second, edge->first);
             if (++edge == edges.end())
                 edge = edges.begin();
-            ++tried_edges;
             invert_edge(r->g, edge->first, edge->second);
+            ++tried_edges;
             deps = r->g.get_dependencies(edge->second);
         }
 

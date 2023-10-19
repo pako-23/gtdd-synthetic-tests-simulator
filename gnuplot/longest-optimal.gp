@@ -4,7 +4,7 @@ set title 'Longest Schedule Found Over Optimal Longest Schedule'
 set xlabel 'Test Suite Size'
 set ylabel 'Longest Schedule Found/Optimal Longest Schedule'
 
-# set yrange [0.8:1.2]
+set yrange [0.8:1.2]
 
 graph_generators = "barabasi-albert"
 

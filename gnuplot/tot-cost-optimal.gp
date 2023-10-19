@@ -4,7 +4,7 @@ set title 'Total Cost Over Optimal Total Cost'
 set xlabel 'Test Suite Size'
 set ylabel 'Total Cost Found/Optimal Total Cost'
 
-# set yrange [0.8:1.2]
+set yrange [0.8:1.2]
 
 graph_generators = "barabasi-albert erdos-renyi out-degree-3-3"
 
