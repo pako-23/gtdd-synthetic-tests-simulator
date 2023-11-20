@@ -6,7 +6,7 @@ set ylabel 'Longest Schedule Found/Optimal Longest Schedule'
 
 set yrange [0.8:1.2]
 
-graph_generators = "barabasi-albert"
+graph_generators = "barabasi-albert erdos-renyi out-degree-3-3"
 
 do for [graph in graph_generators] {
   set output './plots/longest-optimal-'.graph.'.pdf'
