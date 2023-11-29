@@ -236,12 +236,13 @@ std::unique_ptr<Result> MEMFAST::run(const std::vector<uint32_t>& tests, TestSui
 
     for (const uint32_t t : tests) {
         schedule schedule { { t } };
+        m.add_testsuite_run();
         if (oracle->run_tests(schedule)[0])
             r->table[1].insert(schedule);
         else
             not_passed.insert(t);
     }
-
+    m.add_test_runs(tests.size());
     uint32_t rank { 1 };
 
     while (!not_passed.empty()) {
