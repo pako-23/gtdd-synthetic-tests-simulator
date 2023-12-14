@@ -193,9 +193,13 @@ GNUPLOT_SCRIPTS := $(wildcard $(GNUPLOT_SCRIPTS_DIR)*.gp)
 STATS_FILES := $(shell find $(RESULTS_DIR)experiments -name stats.csv)
 DAT_FILES := $(STATS_FILES:%.csv=%.dat)
 
-PLOTS := $(GNUPLOT_SCRIPTS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%-barabasi-albert.pdf) \
-	$(GNUPLOT_SCRIPTS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%-erdos-renyi.pdf) \
-	$(GNUPLOT_SCRIPTS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%-out-degree-3-3.pdf)
+CANDLESTICKS := $(filter-out %-box-plot.gp,$(GNUPLOT_SCRIPTS))
+BOX_PLOTS := $(filter %-box-plot.gp,$(GNUPLOT_SCRIPTS))
+
+PLOTS := $(CANDLESTICKS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%-barabasi-albert.pdf) \
+	$(CANDLESTICKS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%-erdos-renyi.pdf) \
+	$(CANDLESTICKS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%-out-degree-3-3.pdf) \
+	$(BOX_PLOTS:$(GNUPLOT_SCRIPTS_DIR)%.gp=$(PLOTS_DIR)%.pdf)
 
 .PHONY: plots_dir
 plots_dir: $(PLOTS_DIR)
@@ -213,6 +217,9 @@ $(PLOTS_DIR)%-erdos-renyi.pdf: $(GNUPLOT_SCRIPTS_DIR)%.gp $(DAT_FILES) | plots_d
 	gnuplot $<
 
 $(PLOTS_DIR)%-out-degree-3-3.pdf: $(GNUPLOT_SCRIPTS_DIR)%.gp $(DAT_FILES) | plots_dir
+	gnuplot $<
+
+$(PLOTS_DIR)%-box-plot.pdf: $(GNUPLOT_SCRIPTS_DIR)%-box-plot.gp | plots_dir
 	gnuplot $<
 
 .PHONY: plots
