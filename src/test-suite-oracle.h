@@ -8,32 +8,32 @@
 
 class TestSuiteOracle {
 public:
-    virtual ~TestSuiteOracle() {}
-    virtual std::vector<bool> run_tests(const std::vector<uint32_t>&) = 0;
-    virtual std::vector<uint32_t> tests() const = 0;
+  virtual ~TestSuiteOracle() {}
+  virtual std::vector<bool> run_tests(const std::vector<uint32_t> &) = 0;
+  virtual std::vector<uint32_t> tests() const = 0;
 };
 
 class GraphGeneratorParams {
 public:
-    std::string generator_type;
-    double probability;
-    uint32_t min_out;
-    uint32_t max_out;
+  std::string generator_type;
+  double probability;
+  uint32_t min_out;
+  uint32_t max_out;
 };
 
 class DirectDependenciesOracle : public TestSuiteOracle {
 public:
-    DirectDependenciesOracle(const std::vector<uint32_t>&,
-        const GraphGeneratorParams&);
-    DirectDependenciesOracle(const Graph&);
-    ~DirectDependenciesOracle() override {}
+  DirectDependenciesOracle(const std::vector<uint32_t> &,
+                           const GraphGeneratorParams &);
+  DirectDependenciesOracle(const Graph &);
+  ~DirectDependenciesOracle() override {}
 
-    std::vector<uint32_t> tests() const;
-    std::vector<bool> run_tests(const std::vector<uint32_t>&);
-    inline const Graph& get_graph() const { return graph; }
+  std::vector<uint32_t> tests() const override;
+  std::vector<bool> run_tests(const std::vector<uint32_t> &) override;
+  inline const Graph &get_graph() const { return graph; }
 
 private:
-    Graph graph;
+  Graph graph;
 };
 
 #endif

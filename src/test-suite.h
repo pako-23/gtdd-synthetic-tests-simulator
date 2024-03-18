@@ -6,20 +6,20 @@
 
 class TestSuite {
 public:
-    TestSuite(uint32_t);
-    virtual ~TestSuite() {};
+  TestSuite(uint32_t);
+  virtual ~TestSuite(){};
 
-    virtual std::vector<uint32_t> generate_tests(void) = 0;
+  virtual std::vector<uint32_t> generate_tests(void) = 0;
 
 protected:
-    uint32_t n;
+  uint32_t n;
 };
 
 class ListTestSuite : public TestSuite {
 public:
-    ListTestSuite(uint32_t);
+  ListTestSuite(uint32_t);
 
-    std::vector<uint32_t> generate_tests(void);
+  std::vector<uint32_t> generate_tests(void);
 };
 
 #endif

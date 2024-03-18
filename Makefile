@@ -4,20 +4,11 @@ SRC_DIR := src/
 BUILD_DIR := build/
 PROG_NAME := synthetic-tests-simulator
 PROG := $(BUILD_DIR)$(PROG_NAME)
-CODE_STYLE := WebKit
 
 SRCS := $(wildcard $(SRC_DIR)*.cc)
 H_FILES := $(wildcard $(SRC_DIR)*.h)
 OBJS := $(SRCS:$(SRC_DIR)%.cc=$(BUILD_DIR)%.o)
 DEPENDS := $(OBJS:%.o=%.d)
-
-ifneq ($(shell which podman 2>/dev/null),)
-	CONTAINER_CLI := $(shell which podman)
-	MOUNT_OPTIONS := :Z
-else ifneq ($(shell which docker 2>/dev/null),)
-	CONTAINER_CLI := $(shell which docker)
-	MOUNT_OPTIONS :=
-endif
 
 .PHONY: all
 all: $(PROG)
@@ -37,22 +28,6 @@ $(BUILD_DIR):
 
 
 -include $(DEPENDS)
-
-ifdef CONTAINER_CLI
-.PHONY: lint
-lint:
-	@$(CONTAINER_CLI) run -t --rm -v $(PWD):/workdir$(MOUNT_OPTIONS) \
-		-w /workdir \
-		neszt/cppcheck-docker \
-		cppcheck --enable=warning .
-
-.PHONY: format
-format:
-	@$(CONTAINER_CLI) run -t --rm -v $(PWD):/workdir$(MOUNT_OPTIONS) \
-		-w /workdir \
-		unibeautify/clang-format \
-		-i -style=$(CODE_STYLE) $(SRCS) $(H_FILES)
-endif
 
 MAX_RUNS ?= 50
 MIN_TESTS ?= 2
