@@ -6,8 +6,8 @@
 
 class TestSuite {
 public:
-  TestSuite(uint32_t);
-  virtual ~TestSuite(){};
+  TestSuite(uint32_t nodes);
+  virtual ~TestSuite(void) {};
 
   virtual std::vector<uint32_t> generate_tests(void) = 0;
 
@@ -17,7 +17,7 @@ protected:
 
 class ListTestSuite : public TestSuite {
 public:
-  ListTestSuite(uint32_t);
+  ListTestSuite(uint32_t nodes);
 
   std::vector<uint32_t> generate_tests(void);
 };

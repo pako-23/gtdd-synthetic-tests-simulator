@@ -1,18 +1,26 @@
 #include "algorithms.h"
+#include "graph.h"
 #include "test-suite-oracle.h"
 #include "test-suite.h"
+#include <cstdint>
 #include <cstdlib>
+#include <fcntl.h>
 #include <fstream>
 #include <getopt.h>
 #include <limits>
+#include <ostream>
+#include <sstream>
 #include <string.h>
+#include <sys/file.h>
 
-int generate_command(int, char *[]);
-int deps_command(int, char *[]);
-int help_command(int, char *[]);
-void print_root_help(const char *);
-void print_deps_help(const char *);
-void print_generate_help(const char *);
+int generate_command(int argc, char *argv[]);
+int deps_command(int argc, char *argv[]);
+int help_command(int argc, char *argv[]);
+void print_root_help(const char *prog_name);
+void print_deps_help(const char *prog_nmae);
+void print_generate_help(const char *prog_name);
+void record_metrics(const char *metrics_file, DirectDependenciesOracle *oracle,
+                    const Graph &result);
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
@@ -162,14 +170,20 @@ int deps_command(int argc, char *argv[]) {
 
   std::unique_ptr<TestSuiteOracle> oracle{new DirectDependenciesOracle{g}};
   std::vector<uint32_t> tests{oracle->tests()};
-  Metrics m{tests.size()};
-
-  m.optimal_schedule_metrics(g.get_schedules());
   std::unique_ptr<Algorithm> algo{algorithm_factory(algorithm)};
-  std::unique_ptr<Result> result{algo->run(tests, oracle.get(), m)};
-  result->output(out_file);
+  std::unique_ptr<Graph> result{algo->run(tests, oracle.get())};
+
+  if (out_file) {
+    std::ofstream out{out_file};
+    out << *result;
+    out.close();
+  } else {
+    std::cout << *result;
+  }
+
   if (metric_file)
-    m.record(metric_file);
+    record_metrics(metric_file, (DirectDependenciesOracle *)oracle.get(),
+                   *result);
 
   return EXIT_SUCCESS;
 }
@@ -269,4 +283,36 @@ void print_generate_help(const char *prog_name) {
             << std::endl
             << "  -h, --help           Display this help page." << std::endl
             << std::endl;
+}
+
+void record_metrics(const char *metrics_file, DirectDependenciesOracle *oracle,
+                    const Graph &result) {
+  GraphMetrics optimal = compute_graph_metrics(oracle->get_graph());
+  GraphMetrics computed = compute_graph_metrics(oracle->get_graph());
+
+  int fd = open(metrics_file, O_WRONLY | O_CREAT, 0644);
+  if (fd < 0 || flock(fd, LOCK_EX) != 0) {
+    std::cerr << "Failed to write into stats file " << metrics_file << ": "
+              << strerror(errno) << std::endl;
+    return;
+  }
+  std::ostringstream oss;
+
+  if (lseek(fd, 0, SEEK_END) == 0)
+    oss << "n,test_suite_runs,test_runs,"
+           "optimal_longest_schedule,longest_schedule,"
+           "optimal_total_cost,total_cost"
+        << std::endl;
+
+  oss << oracle->get_graph().size() << ',' << oracle->get_test_suite_runs()
+      << ',' << oracle->get_test_runs() << ',' << optimal.longest_schedule
+      << ',' << computed.longest_schedule << ',' << optimal.total_cost << ','
+      << computed.total_cost << std::endl;
+
+  if (write(fd, oss.str().c_str(), oss.str().size()) == -1)
+    std::cerr << "Failed to write into stats file " << metrics_file << ": "
+              << strerror(errno) << std::endl;
+
+  flock(fd, LOCK_UN);
+  close(fd);
 }

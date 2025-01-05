@@ -1,5 +1,6 @@
 #include "test-suite-oracle.h"
-#include <fstream>
+#include <cstdint>
+#include <memory>
 
 DirectDependenciesOracle::DirectDependenciesOracle(
     const std::vector<uint32_t> &nodes, const GraphGeneratorParams &params)
@@ -21,41 +22,41 @@ DirectDependenciesOracle::DirectDependenciesOracle(
   graph_generator->generate_edges();
 }
 
-DirectDependenciesOracle::DirectDependenciesOracle(const Graph &g) : graph{g} {}
+DirectDependenciesOracle::DirectDependenciesOracle(const Graph &g)
+    : graph{g}, test_suite_runs{0}, test_runs{0} {}
 
 std::vector<bool>
 DirectDependenciesOracle::run_tests(const std::vector<uint32_t> &tests) {
-  std::vector<bool> results(tests.size());
+  std::vector<bool> results(tests.size(), false);
 
-  for (auto it1 = tests.begin(); it1 != tests.end(); ++it1) {
-    std::unordered_set<uint32_t> deps = graph.get_dependencies(*it1);
+  ++test_suite_runs;
+
+  for (uint32_t i = 0; i < tests.size(); ++i) {
+    std::unordered_set<uint32_t> deps = graph.get_dependencies(tests[i]);
 
     for (const uint32_t dep : deps) {
       bool satisfied{false};
-      for (auto it2 = tests.begin(); it2 != it1; ++it2)
-        if (*it2 == dep)
+      for (uint32_t j = 0; j != i; ++j)
+        if (tests[j] == dep)
           satisfied = true;
 
-      if (!satisfied)
+      if (!satisfied) {
+        test_runs += i + 1;
         return results;
+      }
     }
 
-    results[it1 - tests.begin()] = true;
+    results[i] = true;
   }
+
+  test_runs += tests.size();
 
   return results;
 }
 
-std::vector<uint32_t> DirectDependenciesOracle::tests() const {
+std::vector<uint32_t> DirectDependenciesOracle::tests(void) const {
   std::vector<uint32_t> v;
   for (const auto &it : graph)
     v.push_back(it.first);
   return v;
-}
-
-std::unique_ptr<TestSuiteOracle> from_file(const char *fname) {
-  Graph g;
-  std::ifstream is{fname};
-  is >> g;
-  return std::unique_ptr<TestSuiteOracle>{new DirectDependenciesOracle{g}};
 }

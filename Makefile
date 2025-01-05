@@ -29,7 +29,7 @@ $(BUILD_DIR):
 
 -include $(DEPENDS)
 
-MAX_RUNS ?= 50
+MAX_RUNS ?= 5
 MIN_TESTS ?= 2
 MAX_TESTS ?= 500
 TESTS_STEP ?= 10
@@ -81,8 +81,8 @@ pfast_experiments: $(shell $(call EXP_FILES,experiments/pfast/barabasi-albert,do
 
 .PHONY: mem_fast_experiments
 mem_fast_experiments: $(shell $(call MEMFAST_EXP_FILES,experiments/pfast/fixed-probability,dot)) \
-	$(shell $(call MEMFAST_EXP_FILES,experiments/pradet/fixed-probability,dot)) \
-	$(shell $(call MEMFAST_EXP_FILES,experiments/mem-fast/fixed-probability,txt))
+	$(shell $(call MEMFAST_EXP_FILES,experiments/pradet/fixed-probability,dot))
+#	$(shell $(call MEMFAST_EXP_FILES,experiments/mem-fast/fixed-probability,dot))
 
 
 $(RESULTS_DIR)experiments/pradet/barabasi-albert/%.dot: $(RESULTS_DIR)graphs/barabasi-albert/%.dot $(PROG) | experiment_dirs
@@ -101,7 +101,7 @@ $(RESULTS_DIR)experiments/pradet/fixed-probability/%.dot: $(RESULTS_DIR)graphs/f
 $(RESULTS_DIR)experiments/pfast/fixed-probability/%.dot: $(RESULTS_DIR)graphs/fixed-probability/%.dot $(PROG) | memfast_experiment_dirs
 	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname $@)/stats.csv" || true
 
-$(RESULTS_DIR)experiments/mem-fast/fixed-probability/%.txt: $(RESULTS_DIR)graphs/fixed-probability/%.dot $(PROG) | memfast_experiment_dirs
+$(RESULTS_DIR)experiments/mem-fast/fixed-probability/%.dot: $(RESULTS_DIR)graphs/fixed-probability/%.dot $(PROG) | memfast_experiment_dirs
 	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a mem-fast -o $@ -m "$$(dirname $@)/stats.csv" || true
 
 

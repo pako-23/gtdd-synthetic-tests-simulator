@@ -1,6 +1,7 @@
 #include "graph.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <iterator>
 #include <random>
 #include <sstream>
@@ -14,7 +15,12 @@ void Graph::remove_edge(uint32_t u, uint32_t v) { graph[u].erase(v); }
 
 void Graph::add_edge(uint32_t u, uint32_t v) { graph[u].insert(v); }
 
-std::vector<std::vector<uint32_t>> Graph::get_schedules() const {
+void Graph::invert_edge(uint32_t u, uint32_t v) {
+  remove_edge(u, v);
+  add_edge(v, u);
+}
+
+std::vector<std::vector<uint32_t>> Graph::get_schedules(void) const {
   std::vector<std::vector<uint32_t>> schedules;
   std::unordered_set<uint32_t> visited;
 
@@ -64,7 +70,7 @@ std::unordered_set<uint32_t> Graph::get_dependencies(uint32_t u) const {
   return dep;
 }
 
-void Graph::transitive_reduction() {
+void Graph::transitive_reduction(void) {
   for (auto &it : graph) {
     std::unordered_set<uint32_t> min_edges{it.second};
 
@@ -79,13 +85,28 @@ void Graph::transitive_reduction() {
   }
 }
 
+GraphMetrics::GraphMetrics(void) : longest_schedule{0}, total_cost{0} {}
+
+GraphMetrics compute_graph_metrics(const Graph &graph) {
+  GraphMetrics res;
+  std::vector<std::vector<uint32_t>> schedules = graph.get_schedules();
+
+  for (const auto &schedule : schedules) {
+    if (schedule.size() > res.longest_schedule)
+      res.longest_schedule = schedule.size();
+    res.total_cost += schedule.size();
+  }
+
+  return res;
+}
+
 GraphGenerator::GraphGenerator(Graph &graph) : graph{graph} {}
 
 ErdosRenyiGenerator::ErdosRenyiGenerator(Graph &graph, double p)
     : GraphGenerator{graph},
       prob{p > 1 ? log(graph.size()) / graph.size() : p} {}
 
-void ErdosRenyiGenerator::generate_edges() {
+void ErdosRenyiGenerator::generate_edges(void) {
   std::uniform_real_distribution<double> real_dis(0.0, 1.0);
   std::mt19937 re(std::random_device{}());
 
@@ -99,7 +120,7 @@ void ErdosRenyiGenerator::generate_edges() {
 BarabasiAlbertGenerator::BarabasiAlbertGenerator(Graph &graph)
     : GraphGenerator{graph} {}
 
-void BarabasiAlbertGenerator::generate_edges() {
+void BarabasiAlbertGenerator::generate_edges(void) {
   if (graph.size() < 2)
     return;
 
@@ -140,7 +161,7 @@ OutDegreeGenerator::OutDegreeGenerator(Graph &graph, uint32_t min_degree,
                                        uint32_t max_degree)
     : GraphGenerator{graph}, min_degree{min_degree}, max_degree{max_degree} {}
 
-void OutDegreeGenerator::generate_edges() {
+void OutDegreeGenerator::generate_edges(void) {
   std::vector<uint32_t> keys{};
   std::uniform_int_distribution<uint32_t> degree_dis(min_degree, max_degree);
   std::mt19937 re(std::random_device{}());
@@ -166,9 +187,13 @@ std::ostream &operator<<(std::ostream &os, const Graph &g) {
   for (const auto &it : g)
     os << "    " << it.first << ";" << std::endl;
 
-  for (const auto &it : g)
-    for (const auto &target : it.second)
+  for (const auto &it : g) {
+    std::vector<uint32_t> targets{it.second.begin(), it.second.end()};
+
+    std::sort(targets.begin(), targets.end());
+    for (const auto &target : targets)
       os << "    " << it.first << " -> " << target << ";" << std::endl;
+  }
 
   return os << "}" << std::endl;
 }
