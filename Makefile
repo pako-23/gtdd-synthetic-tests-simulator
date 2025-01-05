@@ -81,8 +81,8 @@ pfast_experiments: $(shell $(call EXP_FILES,experiments/pfast/barabasi-albert,do
 
 .PHONY: mem_fast_experiments
 mem_fast_experiments: $(shell $(call MEMFAST_EXP_FILES,experiments/pfast/fixed-probability,dot)) \
-	$(shell $(call MEMFAST_EXP_FILES,experiments/pradet/fixed-probability,dot))
-#	$(shell $(call MEMFAST_EXP_FILES,experiments/mem-fast/fixed-probability,dot))
+	$(shell $(call MEMFAST_EXP_FILES,experiments/pradet/fixed-probability,dot)) \
+	$(shell $(call MEMFAST_EXP_FILES,experiments/mem-fast/fixed-probability,dot))
 
 
 $(RESULTS_DIR)experiments/pradet/barabasi-albert/%.dot: $(RESULTS_DIR)graphs/barabasi-albert/%.dot $(PROG) | experiment_dirs
