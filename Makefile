@@ -33,7 +33,6 @@ MAX_RUNS ?= 5
 MIN_TESTS ?= 2
 MAX_TESTS ?= 500
 TESTS_STEP ?= 10
-TIMEOUT ?= 30m
 RESULTS_DIR := ./results/
 PROBABILITIES := 0.0001 0.0005 0.001 0.005 0.01 0.02 0.05
 
@@ -86,33 +85,33 @@ mem_fast_experiments: $(shell $(call MEMFAST_EXP_FILES,experiments/pfast/fixed-p
 
 
 $(RESULTS_DIR)experiments/pradet/barabasi-albert/%.dot: $(RESULTS_DIR)graphs/barabasi-albert/%.dot $(PROG) | experiment_dirs
-	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
+	$(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv"
 
 $(RESULTS_DIR)experiments/pradet/erdos-renyi/%.dot: $(RESULTS_DIR)graphs/erdos-renyi/%.dot $(PROG) | experiment_dirs
-	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
+	$(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv"
 
 $(RESULTS_DIR)experiments/pradet/out-degree-3-3/%.dot: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot $(PROG) | experiment_dirs
-	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
+	$(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv"
 
 
 $(RESULTS_DIR)experiments/pradet/fixed-probability/%.dot: $(RESULTS_DIR)graphs/fixed-probability/%.dot $(PROG) | memfast_experiment_dirs
-	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname $@)/stats.csv" || true
+	$(PROG) deps -i "$<" -a pradet -o $@ -m "$$(dirname $@)/stats.csv"
 
 $(RESULTS_DIR)experiments/pfast/fixed-probability/%.dot: $(RESULTS_DIR)graphs/fixed-probability/%.dot $(PROG) | memfast_experiment_dirs
-	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname $@)/stats.csv" || true
+	$(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname $@)/stats.csv"
 
 $(RESULTS_DIR)experiments/mem-fast/fixed-probability/%.dot: $(RESULTS_DIR)graphs/fixed-probability/%.dot $(PROG) | memfast_experiment_dirs
-	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a mem-fast -o $@ -m "$$(dirname $@)/stats.csv" || true
+	$(PROG) deps -i "$<" -a mem-fast -o $@ -m "$$(dirname $@)/stats.csv"
 
 
 $(RESULTS_DIR)experiments/pfast/barabasi-albert/%.dot: $(RESULTS_DIR)graphs/barabasi-albert/%.dot $(PROG) | experiment_dirs
-	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
+	$(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv"
 
 $(RESULTS_DIR)experiments/pfast/erdos-renyi/%.dot: $(RESULTS_DIR)graphs/erdos-renyi/%.dot $(PROG) | experiment_dirs
-	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
+	$(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv"
 
 $(RESULTS_DIR)experiments/pfast/out-degree-3-3/%.dot: $(RESULTS_DIR)graphs/out-degree-3-3/%.dot $(PROG) | experiment_dirs
-	timeout $(TIMEOUT) $(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv" || true
+	$(PROG) deps -i "$<" -a pfast -o $@ -m "$$(dirname "$$(dirname $@)")/stats.csv"
 
 
 .PRECIOUS: $(RESULTS_DIR)graphs/barabasi-albert/%.dot
