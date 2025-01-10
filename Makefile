@@ -29,7 +29,7 @@ $(BUILD_DIR):
 
 -include $(DEPENDS)
 
-MAX_RUNS ?= 5
+MAX_RUNS ?= 50
 MIN_TESTS ?= 2
 MAX_TESTS ?= 500
 TESTS_STEP ?= 10
